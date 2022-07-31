@@ -381,7 +381,7 @@ pre code {
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-<pre class="r"><code>file2 = read_csv(unzip(&quot;data_info.zip&quot;, &quot;MERGED2018_19_PP.csv&quot;))</code></pre>
+<pre class="r"><code>file2 = read_csv(unzip(&quot;data_info.zip&quot;,&quot;MERGED2018_19_PP.csv&quot;))</code></pre>
 <pre><code>## Rows: 6807 Columns: 2989
 ## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
@@ -390,7 +390,7 @@ pre code {
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-<pre class="r"><code>file3 = read_csv(unzip(&quot;data_info.zip&quot;, &quot;MERGED2019_20_PP.csv&quot;))</code></pre>
+<pre class="r"><code>file3 = read_csv(unzip(&quot;data_info.zip&quot;,&quot;MERGED2019_20_PP.csv&quot;))</code></pre>
 <pre><code>## Rows: 6694 Columns: 2989
 ## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
@@ -399,7 +399,7 @@ pre code {
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-<pre class="r"><code>file4 = read_csv(unzip(&quot;data_info.zip&quot;, &quot;MERGED2020_21_PP.csv&quot;))</code></pre>
+<pre class="r"><code>file4 = read_csv(unzip(&quot;data_info.zip&quot;,&quot;MERGED2020_21_PP.csv&quot;))</code></pre>
 <pre><code>## Rows: 6662 Columns: 2989
 ## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
@@ -417,7 +417,27 @@ college = file %&gt;%
   select(&quot;INSTNM&quot;, &quot;STABBR&quot;, &quot;SAT_AVG&quot;, &quot;SATVRMID&quot;, &quot;SATMTMID&quot;, &quot;ACTENMID&quot;, &quot;ACTMTMID&quot;, &quot;UGDS_WHITE&quot;, &quot;UGDS_BLACK&quot;, &quot;UGDS_HISP&quot;, &quot;UGDS_ASIAN&quot;,&quot;UGDS_NHPI&quot;,&quot;UGDS_2MOR&quot;,&quot;UGDS_NRA&quot;)
 
 college[college == &#39;NULL&#39;] = NA
-college = college %&gt;% na.omit()</code></pre>
+college = college %&gt;% na.omit()
+
+str(college)</code></pre>
+<pre><code>## &#39;data.frame&#39;:    4383 obs. of  14 variables:
+##  $ INSTNM    : chr  &quot;Alabama A &amp; M University&quot; &quot;Alabama A &amp; M University&quot; &quot;Alabama A &amp; M University&quot; &quot;Alabama A &amp; M University&quot; ...
+##  $ STABBR    : chr  &quot;AL&quot; &quot;AL&quot; &quot;AL&quot; &quot;AL&quot; ...
+##  $ SAT_AVG   : chr  &quot;957&quot; &quot;929&quot; &quot;939&quot; &quot;959&quot; ...
+##  $ SATVRMID  : chr  &quot;475&quot; &quot;425&quot; &quot;470&quot; &quot;475&quot; ...
+##  $ SATMTMID  : chr  &quot;465&quot; &quot;428&quot; &quot;455&quot; &quot;455&quot; ...
+##  $ ACTENMID  : chr  &quot;17&quot; &quot;17&quot; &quot;17&quot; &quot;17&quot; ...
+##  $ ACTMTMID  : chr  &quot;17&quot; &quot;17&quot; &quot;17&quot; &quot;17&quot; ...
+##  $ UGDS_WHITE: chr  &quot;0.0186&quot; &quot;0.0253&quot; &quot;0.014&quot; &quot;0.0159&quot; ...
+##  $ UGDS_BLACK: chr  &quot;0.912&quot; &quot;0.9073&quot; &quot;0.9072&quot; &quot;0.9022&quot; ...
+##  $ UGDS_HISP : chr  &quot;0.0088&quot; &quot;0.0091&quot; &quot;0.0091&quot; &quot;0.0116&quot; ...
+##  $ UGDS_ASIAN: chr  &quot;0.0018&quot; &quot;0.0019&quot; &quot;0.0019&quot; &quot;0.0012&quot; ...
+##  $ UGDS_NHPI : chr  &quot;0.0016&quot; &quot;0.0019&quot; &quot;0.0011&quot; &quot;0.0008&quot; ...
+##  $ UGDS_2MOR : chr  &quot;0.0118&quot; &quot;0.0104&quot; &quot;0.0114&quot; &quot;0.0143&quot; ...
+##  $ UGDS_NRA  : chr  &quot;0.007&quot; &quot;0.0089&quot; &quot;0.007&quot; &quot;0.0073&quot; ...
+##  - attr(*, &quot;na.action&quot;)= &#39;omit&#39; Named int [1:22892] 9 10 11 12 25 26 27 28 29 30 ...
+##   ..- attr(*, &quot;names&quot;)= chr [1:22892] &quot;9&quot; &quot;10&quot; &quot;11&quot; &quot;12&quot; ...</code></pre>
+<pre class="r"><code># change datatype of college columns from char to numeric</code></pre>
 </div>
 <div id="visualization" class="section level2">
 <h2>Visualization</h2>
