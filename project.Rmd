@@ -32,10 +32,19 @@ college = college %>% na.omit()
 ```
 
 ## Visualization
+```{r}
+# Start off with average SAT for each state
+# Which uni has highest/ lowest
+```
 Basic Plots
 Get Plots for Scores by uni/state
 
 ## Using Ethnicity to correlate
+
+```{r}
+
+```
 make data longer
+Average SAT Scores for each ethnicity
 
 ## Conclusion
