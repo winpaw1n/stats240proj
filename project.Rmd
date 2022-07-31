@@ -1,0 +1,41 @@
+---
+title: "College Score Admission and Ethnicity"
+author: "antelope"
+date: "2022-07-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+```
+
+## Data
+```{r cars}
+file1 = read_csv("MERGED2017_18_PP.csv")
+file2 = read_csv("MERGED2018_19_PP.csv")
+file3 = read_csv("MERGED2019_20_PP.csv")
+file4 = read_csv("MERGED2020_21_PP.csv")
+
+file = file1 %>%
+  merge(file2, all = TRUE) %>% 
+  merge(file3, all = TRUE) %>% 
+  merge(file4, all = TRUE)
+
+college = file %>% 
+  select("INSTNM", "STABBR", "SAT_AVG", "SATVRMID", "SATMTMID", "ACTENMID", "ACTMTMID", "UGDS_WHITE", "UGDS_BLACK", "UGDS_HISP", "UGDS_ASIAN","UGDS_NHPI","UGDS_2MOR","UGDS_NRA")
+
+college[college == 'NULL'] = NA
+college = college %>% na.omit()
+```
+
+## Visualization
+Basic Plots
+Get Plots for Scores by uni/state
+
+## Using Ethnicity to correlate
+make data longer
+
+## Conclusion
