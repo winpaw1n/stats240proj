@@ -10,14 +10,15 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(tidyr)
 library(dplyr)
+library(readr)
 ```
 
 ## Data
-```{r cars}
-file1 = read_csv("MERGED2017_18_PP.csv")
-file2 = read_csv("MERGED2018_19_PP.csv")
-file3 = read_csv("MERGED2019_20_PP.csv")
-file4 = read_csv("MERGED2020_21_PP.csv")
+```{r}
+file1 = read_csv(unzip("data_info.zip","MERGED2017_18_PP.csv"))
+file2 = read_csv(unzip("data_info.zip", "MERGED2018_19_PP.csv"))
+file3 = read_csv(unzip("data_info.zip", "MERGED2019_20_PP.csv"))
+file4 = read_csv(unzip("data_info.zip", "MERGED2020_21_PP.csv"))
 
 file = file1 %>%
   merge(file2, all = TRUE) %>% 
@@ -33,6 +34,8 @@ college = college %>% na.omit()
 
 ## Visualization
 ```{r}
+
+
 # Start off with average SAT for each state
 # Which uni has highest/ lowest
 ```

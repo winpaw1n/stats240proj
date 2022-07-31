@@ -372,7 +372,7 @@ pre code {
 
 <div id="data" class="section level2">
 <h2>Data</h2>
-<pre class="r"><code>file1 = read_csv(&quot;MERGED2017_18_PP.csv&quot;)</code></pre>
+<pre class="r"><code>file1 = read_csv(unzip(&quot;data_info.zip&quot;,&quot;MERGED2017_18_PP.csv&quot;))</code></pre>
 <pre><code>## Rows: 7112 Columns: 2989
 ## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
@@ -381,7 +381,7 @@ pre code {
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-<pre class="r"><code>file2 = read_csv(&quot;MERGED2018_19_PP.csv&quot;)</code></pre>
+<pre class="r"><code>file2 = read_csv(unzip(&quot;data_info.zip&quot;, &quot;MERGED2018_19_PP.csv&quot;))</code></pre>
 <pre><code>## Rows: 6807 Columns: 2989
 ## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
@@ -390,7 +390,7 @@ pre code {
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-<pre class="r"><code>file3 = read_csv(&quot;MERGED2019_20_PP.csv&quot;)</code></pre>
+<pre class="r"><code>file3 = read_csv(unzip(&quot;data_info.zip&quot;, &quot;MERGED2019_20_PP.csv&quot;))</code></pre>
 <pre><code>## Rows: 6694 Columns: 2989
 ## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
@@ -399,7 +399,7 @@ pre code {
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-<pre class="r"><code>file4 = read_csv(&quot;MERGED2020_21_PP.csv&quot;)</code></pre>
+<pre class="r"><code>file4 = read_csv(unzip(&quot;data_info.zip&quot;, &quot;MERGED2020_21_PP.csv&quot;))</code></pre>
 <pre><code>## Rows: 6662 Columns: 2989
 ## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
