@@ -1,1 +1,1 @@
-# stats240proj
+# Stats 240 Project
