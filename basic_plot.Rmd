@@ -1,0 +1,221 @@
+---
+title: "College Score Admission and Ethnicity"
+author: "antelope"
+date: "2022-07-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(tidyr)
+library(leaflet)
+library(htmltools)
+```
+
+## Data Preparation
+
+```{r read data}
+# read data
+y2017 = read_csv("MERGED2017_18_PP.csv")
+y2018 = read_csv("MERGED2018_19_PP.csv")
+y2019 = read_csv("MERGED2019_20_PP.csv")
+y2020 = read_csv("MERGED2020_21_PP.csv")
+```
+
+```{r merge data}
+# merge data
+file = y2017 %>%
+  merge(y2018, all=TRUE) %>%
+  merge(y2019, all=TRUE) %>%
+  merge(y2020, all=TRUE)
+```
+
+```{r}
+# data selection, here we focus on the SATs, ACTs, and ethnicity of a student
+college = file %>% 
+  select("INSTNM", "STABBR", "SAT_AVG", "SATVRMID", "SATMTMID", "ACTENMID", "ACTMTMID", "UGDS_WHITE", "UGDS_BLACK", "UGDS_HISP", "UGDS_ASIAN","UGDS_NHPI","UGDS_2MOR","UGDS_NRA")
+```
+
+```{r}
+# some university do not have the SATs, ACTs score, and information about ethnicity of students, so we are going to drop those schools out
+college[college == 'NULL'] = NA
+colSums(is.na(college))
+college = college %>% na.omit()
+
+# convert data type 
+college$SATMTMID = as.numeric(college$SATMTMID)
+college$SAT_AVG = as.numeric((college$SAT_AVG))
+college$SATVRMID = as.numeric(college$SATVRMID)
+college$ACTENMID = as.numeric(college$ACTENMID)
+college$ACTMTMID = as.numeric(college$ACTMTMID)
+```
+
+```{r}
+# data preparation for geo plot
+viz = file %>%
+  select("INSTNM", "STABBR", "SAT_AVG", "UGDS_WHITE", "UGDS_BLACK", "UGDS_HISP", "UGDS_ASIAN","UGDS_NHPI","UGDS_2MOR","UGDS_NRA", "ZIP", "LATITUDE", "LONGITUDE", "CITY")
+
+viz[viz == 'NULL'] = NA
+
+uniInfo = paste(viz[['INSTNM']], "<br>", 
+                 viz[['CITY']], ", ", 
+                 viz[['STABBR']], viz[['ZIP']], "<br>",
+                 "SAT Average", viz[['SAT_AVG']], "<br>",
+                 "White Proportion", viz[['UGDS_WHITE']], "<br>",
+                 "Black Proportion", viz[['UGDS_BLACK']],"<br>",
+                 "Hispanic Proportion", viz[['UGDS_ASIAN']],"<br>",
+                 "Native Hawaiian/Pacific Islander", viz[['UGDS_NHPI']],"<br>",
+                 "two or more races", viz[['UGDS_2MOR']], "<br>",
+                 "non-resident aliens", viz[['UGDS_NRA']], "<br>")
+
+viz$info = uniInfo
+
+## filter data
+viz = filter(viz,
+                is.na(LATITUDE)==FALSE &
+                is.na(LONGITUDE)==FALSE &
+                is.na(SAT_AVG) == FALSE)
+
+blingIcon = makeIcon(
+  iconUrl = "https://img.icons8.com/color/344/school-building.png",
+  iconWidth = 30, iconHeight = 30,
+)
+```
+
+
+## Data Visualization
+```{r}
+# visualize map of university 
+map = leaflet(viz) %>% 
+          setView(-93.65, 42.0285, zoom = 4) %>%
+          addTiles() %>%
+          addMarkers(~as.numeric(LONGITUDE), ~as.numeric(LATITUDE), popup=~info,
+                     options = popupOptions(closeButton = TRUE),
+                     clusterOptions = markerClusterOptions(), 
+                     icon = blingIcon)
+map
+```
+
+```{r average SATs score for each subjects}
+sat = college %>%
+  select("INSTNM", "SATVRMID", "SATMTMID") %>%
+  pivot_longer(!INSTNM, names_to = "Section", values_to = "Score")
+
+ggplot(sat, aes(x=Score, color=Section, fill=Section, group=Section)) +
+  geom_density(alpha=0.3) +
+  ggtitle("Density of average SAT score across all institution") +
+  xlab("SAT Score") +
+  ylab("")
+```
+
+```{r average ACTs score for each subjects}
+act = college %>%
+  select("INSTNM", "ACTENMID", "ACTMTMID") %>%
+  pivot_longer(!INSTNM, names_to = "Section", values_to = "Score")
+
+ggplot(act, aes(x=Score, color=Section, fill=Section, group=Section)) +
+  geom_density(alpha=0.3) +
+  ggtitle("Density of average ACT score across all institution") +
+  xlab("ACT Score") +
+  ylab("")
+```
+
+```{r school with top SAT Math score}
+top_math = college %>%
+  group_by(INSTNM) %>%
+  summarize(mean_math = round(mean(SATMTMID))) %>%
+  arrange(desc(mean_math)) %>%
+  slice_max(mean_math, n = 20)
+
+ggplot(top_math, aes(x=reorder(INSTNM, mean_math), y=mean_math)) +
+  geom_bar(stat="identity", fill="lightblue") +
+  geom_text(aes(x=INSTNM, y=mean_math-15, hjust=1, label=mean_math), size=3.5) + 
+  coord_flip()
+```
+
+```{r school with top SAT Verbal}
+top_verbal = college %>%
+  group_by(INSTNM) %>%
+  summarize(mean_verbal = round(mean(SATVRMID))) %>%
+  arrange(desc(mean_verbal)) %>%
+  slice_max(mean_verbal, n = 20)
+
+ggplot(top_verbal, aes(x=reorder(INSTNM, mean_verbal), y=mean_verbal)) +
+  geom_bar(stat="identity", fill="lightgreen") +
+  geom_text(aes(x=INSTNM, y=mean_verbal-15, hjust=1, label=mean_verbal), size=3.5) + 
+  coord_flip()
+```
+
+```{r school with top ACT Math}
+# school with top ACT Math
+top_act_math = college %>%
+  group_by(INSTNM) %>%
+  summarize(mean_act_m = round(mean(ACTMTMID))) %>%
+  arrange(desc(mean_act_m)) %>%
+  head(20)
+  
+ggplot(top_act_math, aes(x=reorder(INSTNM, mean_act_m), y=mean_act_m)) +
+  geom_bar(stat="identity", fill="lightpink") +
+  geom_text(aes(x=INSTNM, y=mean_act_m-1, hjust=1, label=mean_act_m), size=3.5) + 
+  coord_flip()
+```
+
+```{r school with top ACT Eng}
+# school with top ACT Eng
+top_act_eng = college %>%
+  group_by(INSTNM) %>%
+  summarize(mean_act_e = round(mean(ACTENMID))) %>%
+  arrange(desc(mean_act_e)) %>%
+  head(20)
+
+ggplot(top_act_eng, aes(x=reorder(INSTNM, mean_act_e), y=mean_act_e)) +
+  geom_bar(stat="identity", fill="lightyellow") +
+  geom_text(aes(x=INSTNM, y=mean_act_e-1, hjust=1, label=mean_act_e), size=3.5) + 
+  coord_flip()
+```
+
+
+```{r proportion of ethnicity in school with lowest admission rate}
+
+# proportion of ethnicity in school with lowest admission rate
+prop_ad = file %>%
+  select("INSTNM", "ADM_RATE", "UGDS_WHITE", "UGDS_BLACK", "UGDS_HISP", "UGDS_ASIAN","UGDS_NHPI","UGDS_2MOR","UGDS_NRA") 
+
+prop_ad[prop_ad == 'NULL'] = NA
+prop_ad = prop_ad %>% na.omit()
+
+prop_ad = prop_ad %>%
+  group_by(INSTNM) %>% 
+  slice_min(ADM_RATE) %>%
+  filter(ADM_RATE != 0) %>%
+  arrange(ADM_RATE) %>%
+  pivot_longer(!INSTNM & !ADM_RATE, names_to = "Ethnicity", values_to = "Proportion") %>%
+  head(140) # 20 schools with lowest admission rate
+
+ggplot(prop_ad, aes(x = INSTNM, y = as.numeric(Proportion), fill = Ethnicity)) +
+  geom_bar(position="stack", stat="identity") + 
+  coord_flip()
+```
+
+The Midwest, as defined by the federal government, comprises the states of Illinois, Indiana, Iowa, Kansas, Michigan, Minnesota, Missouri, Nebraska, North Dakota, Ohio, South Dakota, and Wisconsin.
+
+```{r number of schools in midwest}
+midwest = college %>% 
+  filter(college$STABBR %in% c("IL", "IN", "IA", "KS", "MI", "MN", "MO", "NE", "ND", "OH", "SD", "WI"))
+
+num_school_midwest = midwest %>%
+  group_by(STABBR) %>%
+  summarize(count = n())
+
+ggplot(data = num_school_midwest,
+       aes(x = STABBR, y = count, fill=STABBR)) +
+  geom_col() +
+  geom_text(aes(x=STABBR, y=count-5, label=count), size=3.5) + 
+  ggtitle("Number of Schools in midwest") +
+  xlab("State")+
+  ylab("Number of Institutions")
+```
+
