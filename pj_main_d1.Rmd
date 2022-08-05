@@ -7,7 +7,7 @@ output: html_document
 
 ## Introduction
 
-According to SAT/ACT scores, we would like to know whether liberal states perform better or worse than conservative states, and which ethnicity perform best
+According to SAT scores, we would like to know whether liberal states perform better or worse than conservative states, and which ethnicity perform best
 
 Thesis Statement: 
 
@@ -42,10 +42,6 @@ We will be using the following columns for analysis:
 - SATVRMID - Midpoint of SAT scores at the institution (critical reading)
 
 - SATMTMID - Midpoint of SAT scores at the institution (math)
-
-- ACTENMID - Midpoint of the ACT English score
-
-- ACTMTMID - Midpoint of the ACT math score
 
 - UGDS - Enrollment of undergraduate certificate/degree-seeking students
 
@@ -105,7 +101,7 @@ college = college %>% na.omit()
 
 # convert data type to numeric
 college = college %>%
-  mutate_at(vars("SAT_AVG", "SATVRMID", "SATMTMID", "ACTENMID", "ACTMTMID", "UGDS_WHITE", "UGDS_BLACK", "UGDS_HISP", "UGDS_ASIAN", "UGDS_AIAN", "UGDS_NHPI", "UGDS_2MOR", "UGDS_NRA", "UGDS"), as.numeric)
+  mutate_at(vars("SAT_AVG", "SATVRMID", "SATMTMID", "UGDS_WHITE", "UGDS_BLACK", "UGDS_HISP", "UGDS_ASIAN", "UGDS_AIAN", "UGDS_NHPI", "UGDS_2MOR", "UGDS_NRA", "UGDS"), as.numeric)
 
 # mutate to get population for each race
 college = college %>% 
@@ -121,7 +117,7 @@ college = college %>%
 ```{r, include=FALSE}
 # data preparation for geo plot
 viz = file %>%
-  select("INSTNM", "STABBR", "SATVRMID", "SATMTMID", "ACTENMID", "ACTMTMID", "UGDS_WHITE", "UGDS_BLACK", "UGDS_HISP", "UGDS_ASIAN", "UGDS_AIAN", "UGDS_NHPI","UGDS_2MOR","UGDS_NRA", "ZIP", "LATITUDE", "LONGITUDE", "CITY")
+  select("INSTNM", "STABBR", "SATVRMID", "SATMTMID", "UGDS_WHITE", "UGDS_BLACK", "UGDS_HISP", "UGDS_ASIAN", "UGDS_AIAN", "UGDS_NHPI","UGDS_2MOR","UGDS_NRA", "ZIP", "LATITUDE", "LONGITUDE", "CITY")
 
 viz[viz == 'NULL'] = NA
 
@@ -130,9 +126,7 @@ uniInfo = paste(viz[['INSTNM']], "<br>",
                 viz[['STABBR']], viz[['ZIP']], "<br>",
                 
                 "Avg SAT Math", viz[['SATMTMID']], "<br>", 
-                "Avg SAT Verbal", viz[['SATVRMID']], "<br>", 
-                "Avg ACT Math", viz[['ACTMTMID']], "<br>", 
-                "Avg ACT Eng", viz[['ACTENMID']], "<br>", 
+                "Avg SAT Verbal", viz[['SATVRMID']], "<br>",
                 "White Proportion", as.numeric(viz[['UGDS_WHITE']]) * 100, "%<br>",
                 "Black Proportion", as.numeric(viz[['UGDS_BLACK']]) * 100,"%<br>",
                 "Asian Proportion", as.numeric(viz[['UGDS_ASIAN']]) * 100,"%<br>",
@@ -148,9 +142,7 @@ viz = filter(viz,
               is.na(LATITUDE)==FALSE &
               is.na(LONGITUDE)==FALSE &
               is.na(SATVRMID) == FALSE &
-              is.na(SATMTMID) == FALSE &
-              is.na(ACTENMID) == FALSE &
-              is.na(ACTMTMID) == FALSE)
+              is.na(SATMTMID) == FALSE)
 
 blingIcon = makeIcon(
   iconUrl = "https://img.icons8.com/color/344/school-building.png",
@@ -214,25 +206,6 @@ Average SAT score :
 - Achieving perfect SAT verbal is more rare
 
 
-```{r average ACTs score for each subjects, echo=FALSE}
-act = college %>%
-  select("INSTNM", "ACTENMID", "ACTMTMID") %>%
-  pivot_longer(!INSTNM, names_to = "Section", values_to = "Score")
-
-ggplot(act, aes(x=Score, color=Section, fill=Section, group=Section)) +
-  geom_density(alpha=0.3) +
-  ggtitle("Density of average ACT score across all institution") +
-  xlab("ACT Score") +
-  ylab("")
-```
-
-Average ACT:
-
-- The density of ACT Math score is high at around 22
-
-- Achieving perfect ACT Math is more rare
-
-
 ```{r school with top SAT Math score, echo=FALSE}
 top_math = college %>%
   group_by(INSTNM) %>%
@@ -263,40 +236,6 @@ ggplot(top_verbal, aes(x=reorder(INSTNM, mean_verbal), y=mean_verbal)) +
   ggtitle("Institution with highest average SAT Verbal score") +
   xlab("Institution") +
   ylab("Average SAT Verbal Score")
-```
-
-```{r school with top ACT Math, echo=FALSE}
-# school with top ACT Math
-top_act_math = college %>%
-  group_by(INSTNM) %>%
-  summarize(mean_act_m = round(mean(ACTMTMID))) %>%
-  arrange(desc(mean_act_m)) %>%
-  head(20)
-  
-ggplot(top_act_math, aes(x=reorder(INSTNM, mean_act_m), y=mean_act_m)) +
-  geom_bar(stat="identity", fill="lightpink") +
-  geom_text(aes(x=INSTNM, y=mean_act_m-1, hjust=1, label=mean_act_m), size=3.5) + 
-  coord_flip() +
-  ggtitle("Institution with highest average ACT Math score") +
-  xlab("Institution") +
-  ylab("Average ACT Math Score")
-```
-
-```{r school with top ACT Eng, echo=FALSE}
-# school with top ACT Eng
-top_act_eng = college %>%
-  group_by(INSTNM) %>%
-  summarize(mean_act_e = round(mean(ACTENMID))) %>%
-  arrange(desc(mean_act_e)) %>%
-  head(20)
-
-ggplot(top_act_eng, aes(x=reorder(INSTNM, mean_act_e), y=mean_act_e)) +
-  geom_bar(stat="identity", fill="lightyellow") +
-  geom_text(aes(x=INSTNM, y=mean_act_e-1, hjust=1, label=mean_act_e), size=3.5) + 
-  coord_flip() +
-  ggtitle("Institution with highest average ACT English Score") +
-  xlab("Institution") +
-  ylab("Average ACT English Score")
 ```
 
 
@@ -379,6 +318,7 @@ white = ggplot(score, aes(x = UGDS_WHITE, y = SAT_AVG)) +
   ggtitle("White vs SAT") +
   geom_smooth(se = FALSE, method = "lm") +
   theme_bw() 
+qqnorm(resid(lm(SAT_AVG ~ UGDS_WHITE, data = score)), main = "White error Normal Q-Q Plot")
 
 black = ggplot(score, aes(x = UGDS_BLACK, y = SAT_AVG)) +
   geom_point() +
@@ -387,6 +327,7 @@ black = ggplot(score, aes(x = UGDS_BLACK, y = SAT_AVG)) +
   ggtitle("Black vs SAT ") +
   geom_smooth(se = FALSE, method = "lm") +
   theme_bw() 
+qqnorm(resid(lm(SAT_AVG ~ UGDS_BLACK, data = score)), main = "Black error Normal Q-Q Plot")
 
 asian = ggplot(score, aes(x = UGDS_ASIAN, y = SAT_AVG)) +
   geom_point() +
@@ -395,6 +336,7 @@ asian = ggplot(score, aes(x = UGDS_ASIAN, y = SAT_AVG)) +
   ggtitle("Asian vs SAT ") +
   geom_smooth(se = FALSE, method = "lm") +
   theme_bw()
+qqnorm(resid(lm(SAT_AVG ~ UGDS_ASIAN, data = score)), main = "Asian error Normal Q-Q Plot")
 
 other = ggplot(score, aes(x = other, y = SAT_AVG)) +
   geom_point() +
@@ -404,6 +346,7 @@ other = ggplot(score, aes(x = other, y = SAT_AVG)) +
   geom_smooth(se = FALSE, method = "lm") +
   theme_bw() 
 
+qqnorm(resid(lm(SAT_AVG ~ other, data = score)), main = "Other error Normal Q-Q Plot")
 (white + black + asian) / other
 
 # correlation coefficient
@@ -424,12 +367,14 @@ prop_o = score %>% pull(other)
 cat("other ethnicity vs SAT correlation coefficient:", cor(other, prop_o))
 
 ```
+The graph above show that white, asian and other ethnicity have positive correlation while black ethnicity has negative correlation.
+
 
 **Shortcomings:** 
 
 Since we don't have the admission score for each student but instead an average of all students, there could be bias if we use proportion of ethnicity vs SAT score. For example, one institution can have higher white proportion but the minority students who are not white might score very high so that the average admission score is high.
 
-Next, we will perform a hypothesis testing on the average score of sat between red states and blue states
+*Next, we will perform a hypothesis testing on the average score of sat between red states and blue states*
 
 **Hypothesis testing:**
 
@@ -484,3 +429,10 @@ t.test(blue_score, red_score)
 
 We are 95% confident that the mean average sat score of a more liberal state is between 43.98159 and 79.56565 higher than the mean average sat score of a more conservative state.
 
+**Potential future directions for additional work**
+
+- If we could find the admission score of each student and the institution they attend, we could better understand how each ethnicity performs
+
+- After collecting individual student's data, we could see if blue states have higher diversity in ethnicity than red states
+
+**Conclusion**
