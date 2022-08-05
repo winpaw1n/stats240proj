@@ -380,6 +380,8 @@ white = ggplot(score, aes(x = UGDS_WHITE, y = SAT_AVG)) +
   geom_smooth(se = FALSE, method = "lm") +
   theme_bw() 
 
+qqnorm(resid(lm(SAT_AVG ~ UGDS_WHITE, data = score)), main = "White error Normal Q-Q Plot")
+
 black = ggplot(score, aes(x = UGDS_BLACK, y = SAT_AVG)) +
   geom_point() +
   xlab("Black Proportion") +
@@ -387,6 +389,8 @@ black = ggplot(score, aes(x = UGDS_BLACK, y = SAT_AVG)) +
   ggtitle("Black vs SAT ") +
   geom_smooth(se = FALSE, method = "lm") +
   theme_bw() 
+
+qqnorm(resid(lm(SAT_AVG ~ UGDS_BLACK, data = score)), main = "Black error Normal Q-Q Plot")
 
 asian = ggplot(score, aes(x = UGDS_ASIAN, y = SAT_AVG)) +
   geom_point() +
@@ -396,6 +400,8 @@ asian = ggplot(score, aes(x = UGDS_ASIAN, y = SAT_AVG)) +
   geom_smooth(se = FALSE, method = "lm") +
   theme_bw()
 
+qqnorm(resid(lm(SAT_AVG ~ UGDS_ASIAN, data = score)), main = "Asian error Normal Q-Q Plot")
+
 other = ggplot(score, aes(x = other, y = SAT_AVG)) +
   geom_point() +
   xlab("Other Ethnicities Proportion") +
@@ -403,6 +409,8 @@ other = ggplot(score, aes(x = other, y = SAT_AVG)) +
   ggtitle("Other Ethnicities vs SAT ") +
   geom_smooth(se = FALSE, method = "lm") +
   theme_bw() 
+
+qqnorm(resid(lm(SAT_AVG ~ other, data = score)), main = "Other error Normal Q-Q Plot")
 
 (white + black + asian) / other
 
