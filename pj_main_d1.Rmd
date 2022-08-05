@@ -398,6 +398,18 @@ qqnorm(resid(lm(SAT_AVG ~ UGDS_ASIAN, data = score)), main = "Asian error Normal
 qqnorm(resid(lm(SAT_AVG ~ other, data = score)), main = "Other error Normal Q-Q Plot")
 
 
+summary(lm(SAT_AVG ~ UGDS_WHITE, data = score))
+white_t = (109.12 - 0) / 16.36
+white_p = pt(white_t, df = 1253, lower.tail = F) * 2
+
+summary(lm(SAT_AVG ~ UGDS_BLACK, data = score))
+black_t = abs((-333.950 - 0) / 18.278)
+black_p = pt(black_t, df = 1253, lower.tail = F) * 2
+
+summary(lm(SAT_AVG ~ UGDS_ASIAN, data = score))
+asian_t = (1022.990 - 0) / 49.771
+asian_p = pt(asian_t, df = 1253, lower.tail = F) * 2
+
 # correlation coefficient
 ws = score %>% pull(SAT_AVG)
 prop_w = score %>% pull(UGDS_WHITE)
@@ -417,12 +429,36 @@ cat("other ethnicity vs SAT correlation coefficient:", cor(other, prop_o))
 
 
 ```
+Having found out that there is at least a ethicity proportion variable that has an effect on the mean average SAT admission score, we would like to test each ethicity to find whether it has an effect on average SAT score.
+
+Assumption:
+
+Assume that the random error is approximately normally distributed as confirmed by the normal q-q residual plot which is quite linear and that mean is 0 and constant variance. 
+
+We are using t-statistic with degree of freedom = 1253
+
+Hypothesis: (for each, simplified here)
+
+$H_o =$ theta = 0
+
+$H_a =$ theta != 0
+
+Setting significance alpha = 0.05 we get that p-value for each ethnicity is:
+
+white = 3.82974e-11
+black = 2.671523e-66
+asian = 3.950774e-81
+
+The evidence suggest that we can reject the null hypothesis meaning that each ethnicity proportion has an effect on the average SAT score.
+
 The graph above show that white, asian and other ethnicity have positive correlation while black ethnicity has negative correlation.
 
 
 **Shortcomings:** 
 
-Since we don't have the admission score for each student but instead an average of all students, there could be bias if we use proportion of ethnicity vs SAT score. For example, one institution can have higher white proportion but the minority students who are not white might score very high so that the average admission score is high.
+Our residual plot is not quite linear, however it does give a general sense of the correlation, does somewhat explain our observation, and we are just using for explaining not prediction. We got a decent r-squared of 0.4192 which means that about 41% of the variability observed could be explained by our model.
+
+Also, since we don't have the admission score for each student but instead an average of all students, there could be bias if we use proportion of ethnicity vs SAT score. For example, one institution can have higher white proportion but the minority students who are not white might score very high so that the average admission score is high.
 
 *Next, we will perform a hypothesis testing on the average score of sat between red states and blue states*
 
