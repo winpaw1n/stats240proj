@@ -401,14 +401,20 @@ qqnorm(resid(lm(SAT_AVG ~ other, data = score)), main = "Other error Normal Q-Q 
 summary(lm(SAT_AVG ~ UGDS_WHITE, data = score))
 white_t = (109.12 - 0) / 16.36
 white_p = pt(white_t, df = 1253, lower.tail = F) * 2
+white_ci = confint(lm(SAT_AVG ~ UGDS_WHITE, data = score), level = 0.95)
+cat("white p-val:", white_p)
 
 summary(lm(SAT_AVG ~ UGDS_BLACK, data = score))
 black_t = abs((-333.950 - 0) / 18.278)
 black_p = pt(black_t, df = 1253, lower.tail = F) * 2
+black_ci = confint(lm(SAT_AVG ~ UGDS_BLACK, data = score), level = 0.95)
+cat("black p-val:", black_p)
 
 summary(lm(SAT_AVG ~ UGDS_ASIAN, data = score))
 asian_t = (1022.990 - 0) / 49.771
 asian_p = pt(asian_t, df = 1253, lower.tail = F) * 2
+asian_ci = confint(lm(SAT_AVG ~ UGDS_ASIAN, data = score), level = 0.95)
+cat("asian p-val:", asian_p)
 
 # correlation coefficient
 ws = score %>% pull(SAT_AVG)
@@ -435,7 +441,7 @@ Assumption:
 
 Assume that the random error is approximately normally distributed as confirmed by the normal q-q residual plot which is quite linear and that mean is 0 and constant variance. 
 
-We are using t-statistic with degree of freedom = 1253
+We are using t-statistic = (theta_hat - hypothesized) / SE, with degree of freedom = 1253
 
 Hypothesis: (for each, simplified here)
 
@@ -522,3 +528,5 @@ We are 95% confident that the average sat score of a more liberal state is betwe
 - After collecting individual student's data, we could see if blue states have higher diversity in ethnicity than red states
 
 **Conclusion**
+There is correlation between the proportion of white, black, and asian enrollment ethnicity and the average SAT admission score evident by p-value white = 3.82974e-11,
+black = 2.671523e-66, and asian = 3.950774e-81. Which suggest that there is a gap in SAT with relation to ethnicity. Liberal state also has higher average SAT scores than conservative state given by 95% confidence interval [43.98159, 79.56565] which may suggest that liberal states emphasize more on SAT scores.
