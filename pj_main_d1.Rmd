@@ -1,0 +1,486 @@
+---
+title: "College Score Admission and Ethnicity"
+author: "antelope"
+date: "2022-07-31"
+output: html_document
+---
+
+## Introduction
+
+According to SAT/ACT scores, we would like to know whether liberal states perform better or worse than conservative states, and which ethnicity perform best
+
+Thesis Statement: 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, essage=FALSE, warning=FALSE)
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(tidyr)
+library(leaflet) # geoplot
+library(htmltools)
+library(patchwork)
+```
+
+## Background
+
+The dataset we have selected for this analysis is "U.S Department of Education: College Scoreboard" which includes information on institutional characteristics, enrollment, student aid, costs, and student outcomes during the year 1996-97 through 2020-21.
+
+https://collegescorecard.ed.gov/data/
+
+https://worldpopulationreview.com/state-rankings/most-liberal-states
+
+We will be using the following columns for analysis:
+
+- INSTNM - Institution name
+
+- STABBR - State postcode
+
+- SAT_AVG - Average SAT equivalent score of students admitted
+
+- SATVRMID - Midpoint of SAT scores at the institution (critical reading)
+
+- SATMTMID - Midpoint of SAT scores at the institution (math)
+
+- ACTENMID - Midpoint of the ACT English score
+
+- ACTMTMID - Midpoint of the ACT math score
+
+- UGDS - Enrollment of undergraduate certificate/degree-seeking students
+
+- UGDS_WHITE - Total share of enrollment of undergraduate degree-seeking students who are white
+
+- UGDS_BLACK - Total share of enrollment of undergraduate degree-seeking students who are black
+
+- UGDS_HISP - Total share of enrollment of undergraduate degree-seeking students who are Hispanic
+
+- UGDS_ASIAN - Total share of enrollment of undergraduate degree-seeking students who are Asian
+
+- UGDS_AIAN - Total share of enrollment of undergraduate degree-seeking students who are American Indian/Alaska Native
+
+- UGDS_NHPI - Total share of enrollment of undergraduate degree-seeking students who are Native Hawaiian/Pacific Islander
+
+- UGDS_2MOR - Total share of enrollment of undergraduate degree-seeking students who are two or more races
+
+- UGDS_NRA - Total share of enrollment of undergraduate degree-seeking students who are non-resident aliens
+
+
+Unusual factors:
+
+- All of the score and ethnicity proportion columns are type char which will need to be converted to numeric for analysis
+
+The following report includes graphical information about the basic information such as distribution of SAT and ACT scores, and distribution of ethnicity. it includes a bar chart showing which schools have highest Average SAT and ACT scores. Then, we will be focusing on whether liberal states or conservative states perform better and which ethnicity performs the best. 
+
+```{r read data, include=FALSE}
+# read data
+y2017 = read_csv("MERGED2017_18_PP.csv")
+y2018 = read_csv("MERGED2018_19_PP.csv")
+y2019 = read_csv("MERGED2019_20_PP.csv")
+y2020 = read_csv("MERGED2020_21_PP.csv")
+```
+
+```{r merge data, include=FALSE}
+# merge data
+file = y2017 %>%
+  merge(y2018, all=TRUE) %>%
+  merge(y2019, all=TRUE) %>%
+  merge(y2020, all=TRUE)
+```
+
+Here we focus on the SATs, ACTs, and ethnicity of a student
+
+```{r, include=FALSE}
+# data selection
+college = file %>% 
+  select("INSTNM", "STABBR", "SAT_AVG", "SATVRMID", "SATMTMID", "ACTENMID", "ACTMTMID", "UGDS_WHITE", "UGDS_BLACK", "UGDS_HISP", "UGDS_ASIAN", "UGDS_AIAN", "UGDS_NHPI", "UGDS_2MOR", "UGDS_NRA", "UGDS")
+```
+
+Some university do not have the SATs, ACTs score, and information about ethnicity of students, so we are going to drop those schools out
+
+```{r, include=FALSE}
+college[college == 'NULL'] = NA
+colSums(is.na(college))
+college = college %>% na.omit()
+
+# convert data type to numeric
+college = college %>%
+  mutate_at(vars("SAT_AVG", "SATVRMID", "SATMTMID", "ACTENMID", "ACTMTMID", "UGDS_WHITE", "UGDS_BLACK", "UGDS_HISP", "UGDS_ASIAN", "UGDS_AIAN", "UGDS_NHPI", "UGDS_2MOR", "UGDS_NRA", "UGDS"), as.numeric)
+
+# mutate to get population for each race
+college = college %>% 
+  mutate(white = round(UGDS_WHITE * UGDS),
+         black = round(UGDS_BLACK * UGDS),
+         asian = round(UGDS_ASIAN * UGDS),
+         american_indian = round(UGDS_AIAN * UGDS),
+         pacific_islander = round(UGDS_NHPI * UGDS),
+         two_or_more = round(UGDS_2MOR * UGDS),
+         non_resident_alien = round(UGDS_NRA * UGDS))
+```
+
+```{r, include=FALSE}
+# data preparation for geo plot
+viz = file %>%
+  select("INSTNM", "STABBR", "SATVRMID", "SATMTMID", "ACTENMID", "ACTMTMID", "UGDS_WHITE", "UGDS_BLACK", "UGDS_HISP", "UGDS_ASIAN", "UGDS_AIAN", "UGDS_NHPI","UGDS_2MOR","UGDS_NRA", "ZIP", "LATITUDE", "LONGITUDE", "CITY")
+
+viz[viz == 'NULL'] = NA
+
+uniInfo = paste(viz[['INSTNM']], "<br>", 
+                viz[['CITY']], ", ", 
+                viz[['STABBR']], viz[['ZIP']], "<br>",
+                
+                "Avg SAT Math", viz[['SATMTMID']], "<br>", 
+                "Avg SAT Verbal", viz[['SATVRMID']], "<br>", 
+                "Avg ACT Math", viz[['ACTMTMID']], "<br>", 
+                "Avg ACT Eng", viz[['ACTENMID']], "<br>", 
+                "White Proportion", as.numeric(viz[['UGDS_WHITE']]) * 100, "%<br>",
+                "Black Proportion", as.numeric(viz[['UGDS_BLACK']]) * 100,"%<br>",
+                "Asian Proportion", as.numeric(viz[['UGDS_ASIAN']]) * 100,"%<br>",
+                "American Indian/Alaska Native Proportion", as.numeric(viz[['UGDS_AIAN']]) * 100,"%<br>",
+                "Native Hawaiian/Pacific Islander", as.numeric(viz[['UGDS_NHPI']]) * 100,"%<br>",
+                "two or more races", as.numeric(viz[['UGDS_2MOR']]) * 100, "%<br>",
+                "non-resident aliens", as.numeric(viz[['UGDS_NRA']]) * 100, "%<br>")
+
+viz$info = uniInfo
+
+## filter data
+viz = filter(viz,
+              is.na(LATITUDE)==FALSE &
+              is.na(LONGITUDE)==FALSE &
+              is.na(SATVRMID) == FALSE &
+              is.na(SATMTMID) == FALSE &
+              is.na(ACTENMID) == FALSE &
+              is.na(ACTMTMID) == FALSE)
+
+blingIcon = makeIcon(
+  iconUrl = "https://img.icons8.com/color/344/school-building.png",
+  iconWidth = 30, iconHeight = 30,
+)
+```
+
+
+## Analysis
+This is the map showing the proportion of each ethnicity and SAT/ACT scores according to each institution
+
+```{r, echo=FALSE}
+# visualize map of university 
+map = leaflet(viz) %>% 
+          setView(-93.65, 42.0285, zoom = 4) %>%
+          addTiles() %>%
+          addMarkers(~as.numeric(LONGITUDE), ~as.numeric(LATITUDE), popup=~info,
+                     options = popupOptions(closeButton = TRUE),
+                     clusterOptions = markerClusterOptions(), 
+                     icon = blingIcon)
+map
+```
+
+```{r, echo=FALSE}
+pop_dis = college %>%
+  select("INSTNM", "white", "black", "asian", "american_indian", "pacific_islander", "two_or_more", "non_resident_alien") %>%
+  group_by(INSTNM) %>%
+  summarize(across(everything(), sum)) %>%
+  pivot_longer(!INSTNM, names_to = "race", values_to = "population")
+
+ggplot(pop_dis, aes(x=race, y=log10(population), color=race, fill=race, group=race)) +
+  geom_violin(scale = "area") +
+  ggtitle("Ethnicity Population Distribution across all Institution") +
+  xlab("Race") +
+  ylab("Population (log scaled 10^7)") + 
+  coord_flip()
+```
+
+
+Population Distribution for each races
+
+- ethnicity with highest population is white
+
+
+```{r average SATs score for each subjects, echo=FALSE}
+sat = college %>%
+  select("INSTNM", "SATVRMID", "SATMTMID") %>%
+  pivot_longer(!INSTNM, names_to = "Section", values_to = "Score")
+
+ggplot(sat, aes(x=Score, color=Section, fill=Section, group=Section)) +
+  geom_density(alpha=0.3) +
+  ggtitle("Density of Average SAT score across all Institution") +
+  xlab("SAT Score") +
+  ylab("")
+```
+
+Average SAT score :
+
+- The distribution of SAT math and SAT verbal is quite similar
+
+- Achieving perfect SAT verbal is more rare
+
+
+```{r average ACTs score for each subjects, echo=FALSE}
+act = college %>%
+  select("INSTNM", "ACTENMID", "ACTMTMID") %>%
+  pivot_longer(!INSTNM, names_to = "Section", values_to = "Score")
+
+ggplot(act, aes(x=Score, color=Section, fill=Section, group=Section)) +
+  geom_density(alpha=0.3) +
+  ggtitle("Density of average ACT score across all institution") +
+  xlab("ACT Score") +
+  ylab("")
+```
+
+Average ACT:
+
+- The density of ACT Math score is high at around 22
+
+- Achieving perfect ACT Math is more rare
+
+
+```{r school with top SAT Math score, echo=FALSE}
+top_math = college %>%
+  group_by(INSTNM) %>%
+  summarize(mean_math = round(mean(SATMTMID))) %>%
+  arrange(desc(mean_math)) %>%
+  slice_max(mean_math, n = 20)
+
+ggplot(top_math, aes(x=reorder(INSTNM, mean_math), y=mean_math)) +
+  geom_bar(stat="identity", fill="lightblue") +
+  geom_text(aes(x=INSTNM, y=mean_math-15, hjust=1, label=mean_math), size=3.5) + 
+  coord_flip() + 
+  ggtitle("Institution with highest average SAT Math score") +
+  xlab("Average SAT Math Score") +
+  ylab("Institution")
+```
+
+```{r school with top SAT Verbal, echo=FALSE}
+top_verbal = college %>%
+  group_by(INSTNM) %>%
+  summarize(mean_verbal = round(mean(SATVRMID))) %>%
+  arrange(desc(mean_verbal)) %>%
+  slice_max(mean_verbal, n = 20)
+
+ggplot(top_verbal, aes(x=reorder(INSTNM, mean_verbal), y=mean_verbal)) +
+  geom_bar(stat="identity", fill="lightgreen") +
+  geom_text(aes(x=INSTNM, y=mean_verbal-15, hjust=1, label=mean_verbal), size=3.5) + 
+  coord_flip() +
+  ggtitle("Institution with highest average SAT Verbal score") +
+  xlab("Institution") +
+  ylab("Average SAT Verbal Score")
+```
+
+```{r school with top ACT Math, echo=FALSE}
+# school with top ACT Math
+top_act_math = college %>%
+  group_by(INSTNM) %>%
+  summarize(mean_act_m = round(mean(ACTMTMID))) %>%
+  arrange(desc(mean_act_m)) %>%
+  head(20)
+  
+ggplot(top_act_math, aes(x=reorder(INSTNM, mean_act_m), y=mean_act_m)) +
+  geom_bar(stat="identity", fill="lightpink") +
+  geom_text(aes(x=INSTNM, y=mean_act_m-1, hjust=1, label=mean_act_m), size=3.5) + 
+  coord_flip() +
+  ggtitle("Institution with highest average ACT Math score") +
+  xlab("Institution") +
+  ylab("Average ACT Math Score")
+```
+
+```{r school with top ACT Eng, echo=FALSE}
+# school with top ACT Eng
+top_act_eng = college %>%
+  group_by(INSTNM) %>%
+  summarize(mean_act_e = round(mean(ACTENMID))) %>%
+  arrange(desc(mean_act_e)) %>%
+  head(20)
+
+ggplot(top_act_eng, aes(x=reorder(INSTNM, mean_act_e), y=mean_act_e)) +
+  geom_bar(stat="identity", fill="lightyellow") +
+  geom_text(aes(x=INSTNM, y=mean_act_e-1, hjust=1, label=mean_act_e), size=3.5) + 
+  coord_flip() +
+  ggtitle("Institution with highest average ACT English Score") +
+  xlab("Institution") +
+  ylab("Average ACT English Score")
+```
+
+
+```{r proportion of ethnicity in school with lowest admission rate, echo=FALSE}
+
+# proportion of ethnicity in school with lowest admission rate
+prop_ad = file %>%
+  select("INSTNM", "ADM_RATE", "UGDS_WHITE", "UGDS_BLACK", "UGDS_HISP", "UGDS_ASIAN","UGDS_NHPI","UGDS_2MOR","UGDS_NRA", "UGDS_AIAN") 
+
+prop_ad[prop_ad == 'NULL'] = NA
+prop_ad = prop_ad %>% na.omit()
+
+prop_ad = prop_ad %>%
+  group_by(INSTNM) %>% 
+  slice_min(ADM_RATE) %>%
+  filter(ADM_RATE != 0 & INSTNM != "Chicago School of Professional Psychology-College of Nursing") %>%
+  arrange(ADM_RATE) %>%
+  pivot_longer(!INSTNM & !ADM_RATE, names_to = "Ethnicity", values_to = "Proportion") %>%
+  head(140) # 20 schools with lowest admission rate
+
+ggplot(prop_ad, aes(x = INSTNM, y = as.numeric(Proportion), fill = Ethnicity)) +
+  geom_bar(position="stack", stat="identity") + 
+  coord_flip()+
+  ggtitle("Proportion of Ethnicity in Institution with Lowest Admission Rate") +
+  xlab("Institution") +
+  ylab("Ethnicity Proportion")
+```
+
+```{r number of schools of blue state, echo=FALSE}
+blue = college %>% 
+  filter(college$STABBR %in% c("WA", "OR", "CA", "HI", "IL", "MD", "DE", "NJ", "CT", "RI", "MA", "NY", "VT", "NH", "ME"))
+
+num_school_blue = blue %>%
+  group_by(STABBR) %>%
+  summarize(count = n())
+
+ggplot(data = num_school_blue,
+       aes(x = STABBR, y = count, fill=STABBR)) +
+  geom_col() +
+  geom_text(aes(x=STABBR, y=count-5, label=count), size=3.5) + 
+  ggtitle("Number of Schools in a more liberal states") +
+  xlab("State")+
+  ylab("Number of Institutions")
+```
+
+
+```{r number of schools of red state, echo=FALSE}
+red = college %>% 
+  filter(college$STABBR %in% c("AK", "MT", "ND", "ID", "WY", "SD", "UT", "MO", "KS", "OK", "LA", 'MS', 'AL', 'GA', 'TN', 'SC', 'WV', 'IN', 'NM', 'AZ', 'TX', 'KY', 'OH', 'NC'))
+
+num_school_red = red %>%
+  group_by(STABBR) %>%
+  summarize(count = n())
+
+ggplot(data = num_school_red,
+       aes(x = STABBR, y = count, fill=STABBR)) +
+  geom_col() +
+  geom_text(aes(x=STABBR, y=count-5, label=count), size=3.5) + 
+  ggtitle("Number of Schools in a more conservative states") +
+  xlab("State")+
+  ylab("Number of Institutions")
+```
+
+## Discussion
+
+We would like to know whether there is a correlation between proportion of ethnicity and average sat score
+
+```{r, echo=FALSE, warning = FALSE, message = FALSE}
+score = college %>%
+  group_by(INSTNM) %>%
+  select("INSTNM", "SAT_AVG", "UGDS_WHITE", "UGDS_BLACK", "UGDS_ASIAN") %>%
+  summarize(across(everything(), mean)) %>%
+  mutate(other = 1 - UGDS_WHITE - UGDS_BLACK - UGDS_ASIAN)
+
+# plot
+white = ggplot(score, aes(x = UGDS_WHITE, y = SAT_AVG)) +
+  geom_point() +
+  xlab("White Proportion") +
+  ylab("SAT Average") +
+  ggtitle("White vs SAT") +
+  geom_smooth(se = FALSE, method = "lm") +
+  theme_bw() 
+
+black = ggplot(score, aes(x = UGDS_BLACK, y = SAT_AVG)) +
+  geom_point() +
+  xlab("Black Proportion") +
+  ylab("SAT Average") +
+  ggtitle("Black vs SAT ") +
+  geom_smooth(se = FALSE, method = "lm") +
+  theme_bw() 
+
+asian = ggplot(score, aes(x = UGDS_ASIAN, y = SAT_AVG)) +
+  geom_point() +
+  xlab("Asian Proportion") +
+  ylab("SAT Average") +
+  ggtitle("Asian vs SAT ") +
+  geom_smooth(se = FALSE, method = "lm") +
+  theme_bw()
+
+other = ggplot(score, aes(x = other, y = SAT_AVG)) +
+  geom_point() +
+  xlab("Other Ethnicities Proportion") +
+  ylab("SAT Average") +
+  ggtitle("Other Ethnicities vs SAT ") +
+  geom_smooth(se = FALSE, method = "lm") +
+  theme_bw() 
+
+(white + black + asian) / other
+
+# correlation coefficient
+ws = score %>% pull(SAT_AVG)
+prop_w = score %>% pull(UGDS_WHITE)
+cat("white vs SAT correlation coefficient:", cor(ws,prop_w))
+
+bs = score %>% pull(SAT_AVG)
+prop_b = score %>% pull(UGDS_BLACK)
+cat("black vs SAT correlation coefficient:", cor(bs,prop_b))
+
+as = score %>% pull(SAT_AVG)
+prop_a = score %>% pull(UGDS_ASIAN)
+cat("asian vs SAT correlation coefficient:", cor(as,prop_a))
+
+other = score %>% pull(SAT_AVG)
+prop_o = score %>% pull(other)
+cat("other ethnicity vs SAT correlation coefficient:", cor(other, prop_o))
+
+```
+
+**Shortcomings:** 
+
+Since we don't have the admission score for each student but instead an average of all students, there could be bias if we use proportion of ethnicity vs SAT score. For example, one institution can have higher white proportion but the minority students who are not white might score very high so that the average admission score is high.
+
+Next, we will perform a hypothesis testing on the average score of sat between red states and blue states
+
+**Hypothesis testing:**
+
+**Population and Sample:** 
+
+Population -> Average SAT score of each institution in the US
+
+Sample -> Average SAT score of each institution during 2017-2021 where admission score is not missing (3215 samples)
+
+**Statistical Model:**
+
+Institutions are $x_1,…,x_n$ for $n=3215$
+
+Model these institutions as a random sample from the larger population
+
+Let $F$ be this unspecified distribution
+
+Let $μ$ be the mean
+
+Let $σ$ be the standard deviation
+
+$Xi∼F(μ,σ),i=1,…,n$
+
+$Yi∼F2(μ2,σ2),i=1,…,n2$
+
+**State Hypothesis:**
+
+$H_o =$ There is no difference between average sat score of a more liberal states and a more conservative states
+
+$H_a =$ There is a difference between average sat score of a more liberal states and a more conservative states
+
+**Choose a Test Statistic:**
+
+Test statistic $t=(\overline{x}−\overline{y})/(SE(\overline{x}−\overline{y}))$
+
+```{r, echo=FALSE}
+red_score = red %>%
+  group_by(INSTNM) %>%
+  summarize(sat = round(mean(SAT_AVG))) %>%
+  pull(sat)
+  
+
+blue_score = blue %>%
+  group_by(INSTNM) %>%
+  summarize(sat = round(mean(SAT_AVG))) %>%
+  pull(sat)
+
+t.test(blue_score, red_score)
+```
+
+**Interpretation**
+
+We are 95% confident that the mean average sat score of a more liberal state is between 43.98159 and 79.56565 higher than the mean average sat score of a more conservative state.
+
