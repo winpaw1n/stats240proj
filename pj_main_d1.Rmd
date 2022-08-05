@@ -329,7 +329,7 @@ score %>%
   ggplot(aes(x = SAT_AVG, y = resid)) +
   geom_point() +
   geom_hline(yintercept = 0, color = "red", linetype = "dashed") + 
-  labs(title = "Residual of predicted avg sat score")
+  labs(x = "Predicted SAT average score", y = "Residuals", title = "Residual of predicted avg sat score")
 
 
 summary(fit)
@@ -389,10 +389,7 @@ other = ggplot(score, aes(x = other, y = SAT_AVG)) +
   theme_bw() 
 
 qqnorm(resid(lm(SAT_AVG ~ other, data = score)), main = "Other error Normal Q-Q Plot")
-<<<<<<< HEAD
-=======
 
->>>>>>> c8386776d2c1f84f821a69012a8ac08b0828a481
 (white + black + asian) / other
 
 # correlation coefficient
