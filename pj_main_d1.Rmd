@@ -21,6 +21,7 @@ library(tidyr)
 library(leaflet) # geoplot
 library(htmltools)
 library(patchwork)
+library(modelr)
 ```
 
 ## Background
@@ -70,7 +71,7 @@ Unusual factors:
 
 - All of the score and ethnicity proportion columns are type char which will need to be converted to numeric for analysis
 
-The following report includes graphical information about the basic information such as distribution of SAT and ACT scores, and distribution of ethnicity. it includes a bar chart showing which schools have highest Average SAT and ACT scores. Then, we will be focusing on whether liberal states or conservative states perform better and which ethnicity performs the best. 
+The following report includes graphical information about the basic information such as distribution of SAT and ACT scores, and distribution of ethnicity. it includes a bar chart showing which schools have highest Average SAT and ACT scores. Then, we will be focusing on whether liberal states or conservative states perform better and the degree of correlation between average score and ethnicity.  
 
 ```{r read data, include=FALSE}
 # read data
@@ -371,6 +372,32 @@ score = college %>%
   summarize(across(everything(), mean)) %>%
   mutate(other = 1 - UGDS_WHITE - UGDS_BLACK - UGDS_ASIAN)
 
+## Multiple regression model
+fit = lm(SAT_AVG ~ UGDS_WHITE + UGDS_BLACK + UGDS_ASIAN, data = score)
+
+summary(fit)
+
+qqnorm(resid(fit), main = "Q-Q Plot of resid of multiple regression model")
+
+## Predicted vs. observed avg sat score
+score %>% 
+  add_predictions(fit) %>% 
+  ggplot(aes(x = SAT_AVG, y = pred)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(x = "Average SAT score", y = "Predicted average SAT score", title = "Predicted vs. observed avg sat score")
+## Residual plot
+score %>% 
+  add_residuals(fit) %>% 
+  ggplot(aes(x = SAT_AVG, y = resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") + 
+  labs(title = "Residual of predicted avg sat score")
+
+```
+Hypothesis testing on TODO
+
+```{r, echo=FALSE, warning = FALSE, message = FALSE}
 # plot
 white = ggplot(score, aes(x = UGDS_WHITE, y = SAT_AVG)) +
   geom_point() +
@@ -430,6 +457,7 @@ cat("asian vs SAT correlation coefficient:", cor(as,prop_a))
 other = score %>% pull(SAT_AVG)
 prop_o = score %>% pull(other)
 cat("other ethnicity vs SAT correlation coefficient:", cor(other, prop_o))
+
 
 ```
 
