@@ -314,8 +314,6 @@ score = college %>%
 ## Multiple regression model
 fit = lm(SAT_AVG ~ UGDS_WHITE + UGDS_BLACK + UGDS_ASIAN, data = score)
 
-summary(fit)
-
 qqnorm(resid(fit), main = "Q-Q Plot of resid of multiple regression model")
 
 ## Predicted vs. observed avg sat score
@@ -333,8 +331,19 @@ score %>%
   geom_hline(yintercept = 0, color = "red", linetype = "dashed") + 
   labs(title = "Residual of predicted avg sat score")
 
+
+summary(fit)
+
 ```
-Hypothesis testing on TODO
+The linear model fitted is given by y_hat = 990.03 + 182.04*white - 110.74*black + 1190.96*asian
+
+Hypothesis testing:
+$H_o =$ There is no effect on average SAT score due to proportion of ethnicity (beta_white = beta_black = beta_asian = 0)
+
+$H_a =$ There is some effect on average SAT score due to proportion of ethnicity, at least one of the proportion have effect on avg SAT score (beta_white != 0 || beta_black != 0 || beta_asian != 0).
+
+Since F = 302.6 where p < 2.2e-16, at the significance of alpha = 0.05 we can reject the null hypothesis that there is no effect on average SAT score due to proportion of ethnicity.
+
 
 ```{r, echo=FALSE, warning = FALSE, message = FALSE}
 # plot
