@@ -7,9 +7,10 @@ output: html_document
 
 ## Introduction
 
-According to SAT scores, we would like to know whether liberal states perform better or worse than conservative states, and which ethnicity perform best
+The SAT test is an effort to increase academic opportunity, however there exist a racial gap in SAT scores and many universities are starting to not require it. In this report, we would like to explore the whether there is a correlation between proportion of ethnicity and average SAT admission score of universities in the United States. Additionally, we would like to know whether there is a difference in the average admission SAT scores of liberal states vs conservative states to better understand significance of SAT and admission between them.
 
 Thesis Statement: 
+There is a racial difference in SAT scores between each ethnicity as shown by the correlation between average SAT admission scores and different ethnicity enrollment proportion of university. Additionally, Liberal state universities have a higher admission SAT score than conservative state universities, which may suggest a more emphasis on SAT scores by liberal universities.
 
 
 ```{r setup, include=FALSE}
@@ -471,7 +472,7 @@ t.test(blue_score, red_score)
 
 **Interpretation**
 
-We are 95% confident that the mean average sat score of a more liberal state is between 43.98159 and 79.56565 higher than the mean average sat score of a more conservative state.
+We are 95% confident that the average sat score of a more liberal state is between 43.98159 and 79.56565 higher than the average sat score of a more conservative state.
 
 **Potential future directions for additional work**
 
