@@ -68,7 +68,7 @@ Unusual factors:
 
 - All of the score and ethnicity proportion columns are type char which will need to be converted to numeric for analysis
 
-The following report includes graphical information about the basic information such as distribution of SAT and ACT scores, and distribution of ethnicity. it includes a bar chart showing which schools have highest Average SAT and ACT scores. Then, we will be focusing on whether liberal states or conservative states perform better and the degree of correlation between average score and ethnicity.  
+The following report includes graphical information about the basic information such as distribution of SAT and ACT scores, and distribution of ethnicity. it includes a bar chart showing which schools have highest Average SAT and ACT scores. Then, we will be focusing on the degree of correlation between average score and ethnicity and then whether liberal states or conservative states emphasize on SAT score.  
 
 ```{r read data, include=FALSE}
 # read data
@@ -301,9 +301,7 @@ ggplot(data = num_school_red,
   ylab("Number of Institutions")
 ```
 
-## Discussion
 
-We would like to know whether there is a correlation between proportion of ethnicity and average sat score
 
 ```{r, echo=FALSE, warning = FALSE, message = FALSE}
 score = college %>%
@@ -315,8 +313,6 @@ score = college %>%
 ## Multiple regression model
 fit = lm(SAT_AVG ~ UGDS_WHITE + UGDS_BLACK + UGDS_ASIAN, data = score)
 
-qqnorm(resid(fit), main = "Q-Q Plot of resid of multiple regression model")
-
 ## Predicted vs. observed avg sat score
 score %>% 
   add_predictions(fit) %>% 
@@ -324,6 +320,9 @@ score %>%
   geom_point() +
   geom_smooth(method = "lm") +
   labs(x = "Average SAT score", y = "Predicted average SAT score", title = "Predicted vs. observed avg sat score")
+
+qqnorm(resid(fit), main = "Q-Q Plot of resid of multiple regression model")
+
 ## Residual plot
 score %>% 
   add_residuals(fit) %>% 
@@ -336,9 +335,18 @@ score %>%
 summary(fit)
 
 ```
+## Discussion
+
+We would like to know whether there is a correlation between proportion of ethnicity and average sat score
+
+Assumption:
+
+Assume that the random error is approximately normally distributed as confirmed by the normal q-q residual plot which is quite linear and that mean is 0 and constant variance. 
+
 The linear model fitted is given by y_hat = 990.03 + 182.04*white - 110.74*black + 1190.96*asian
 
 Hypothesis testing:
+
 $H_o =$ There is no effect on average SAT score due to proportion of ethnicity (beta_white = beta_black = beta_asian = 0)
 
 $H_a =$ There is some effect on average SAT score due to proportion of ethnicity, at least one of the proportion have effect on avg SAT score (beta_white != 0 || beta_black != 0 || beta_asian != 0).
@@ -355,9 +363,6 @@ white = ggplot(score, aes(x = UGDS_WHITE, y = SAT_AVG)) +
   ggtitle("White vs SAT") +
   geom_smooth(se = FALSE, method = "lm") +
   theme_bw() 
-qqnorm(resid(lm(SAT_AVG ~ UGDS_WHITE, data = score)), main = "White error Normal Q-Q Plot")
-
-qqnorm(resid(lm(SAT_AVG ~ UGDS_WHITE, data = score)), main = "White error Normal Q-Q Plot")
 
 black = ggplot(score, aes(x = UGDS_BLACK, y = SAT_AVG)) +
   geom_point() +
@@ -366,9 +371,7 @@ black = ggplot(score, aes(x = UGDS_BLACK, y = SAT_AVG)) +
   ggtitle("Black vs SAT ") +
   geom_smooth(se = FALSE, method = "lm") +
   theme_bw() 
-qqnorm(resid(lm(SAT_AVG ~ UGDS_BLACK, data = score)), main = "Black error Normal Q-Q Plot")
 
-qqnorm(resid(lm(SAT_AVG ~ UGDS_BLACK, data = score)), main = "Black error Normal Q-Q Plot")
 
 asian = ggplot(score, aes(x = UGDS_ASIAN, y = SAT_AVG)) +
   geom_point() +
@@ -377,9 +380,6 @@ asian = ggplot(score, aes(x = UGDS_ASIAN, y = SAT_AVG)) +
   ggtitle("Asian vs SAT ") +
   geom_smooth(se = FALSE, method = "lm") +
   theme_bw()
-qqnorm(resid(lm(SAT_AVG ~ UGDS_ASIAN, data = score)), main = "Asian error Normal Q-Q Plot")
-
-qqnorm(resid(lm(SAT_AVG ~ UGDS_ASIAN, data = score)), main = "Asian error Normal Q-Q Plot")
 
 other = ggplot(score, aes(x = other, y = SAT_AVG)) +
   geom_point() +
@@ -389,9 +389,14 @@ other = ggplot(score, aes(x = other, y = SAT_AVG)) +
   geom_smooth(se = FALSE, method = "lm") +
   theme_bw() 
 
+(white + black + asian) / other
+
+## Error
+qqnorm(resid(lm(SAT_AVG ~ UGDS_WHITE, data = score)), main = "White error Normal Q-Q Plot")
+qqnorm(resid(lm(SAT_AVG ~ UGDS_BLACK, data = score)), main = "Black error Normal Q-Q Plot")
+qqnorm(resid(lm(SAT_AVG ~ UGDS_ASIAN, data = score)), main = "Asian error Normal Q-Q Plot")
 qqnorm(resid(lm(SAT_AVG ~ other, data = score)), main = "Other error Normal Q-Q Plot")
 
-(white + black + asian) / other
 
 # correlation coefficient
 ws = score %>% pull(SAT_AVG)
