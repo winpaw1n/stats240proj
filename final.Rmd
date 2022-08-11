@@ -1,0 +1,351 @@
+---
+title: "College Score Admissions and Different State Viewpoints"
+author: "Antelope"
+date: "2022-07-31"
+output: html_document
+---
+
+## Group Members
+**Pun Amornvivat** <br />
+**Tatchapol Jettanachai** <br />
+**Nattarach Larptaweepornsup** <br />
+**Pawin Linmaneechote** <br />
+**Chaitanya Sharma** <br />
+
+
+## Introduction
+The SAT test is an effort to help students show their academic potential to universities in the United States. With the two different state types, liberal and conservative, we believe that there is a different viewpoint on how education could reflect on the SAT test scores. In this report, we would like to explore whether there is a difference in the average SAT admission scores of liberal and conservative states universities to better understand the significance of the SAT test and admission between them.
+
+Thesis Statement: 
+There is a difference in average SAT scores for liberal and conservative states universities, especifically as the liberal mean is statistically higher than that of conservative universities. This may suggest a more emphasis on SAT scores by liberal universities. 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(tidyr)
+library(leaflet) # geoplot
+library(htmltools)
+library(patchwork)
+library(modelr)
+source("ggprob.R")
+```
+
+## Background
+
+We have selected two data sets. One is "U.S Department of Education: College Scoreboard" which includes information on institutional characteristics, admission score, enrollment, student aid, costs, and student outcomes during the year 1996-97 through 2020-21. For the other data set, we use the article “Most Liberal States 2022” which includes the information gathered from the 2018 Gallup poll about the political type of each state (the higher the number, the more liberal). We then create a new column “type” to refer to which school is liberal or conservative based on its location on the map. We will use graphical information about the basic information such as distribution of SAT scores along with conservative/liberal numbers in the other data set to find out if liberal states universities actually emphasize on the SAT scores more than conservative states universities. For the states that are considered to be neither conservative nor liberal, it will be dropped since their political standpoint changes based on each year of election.
+
+
+
+
+Reference:
+https://collegescorecard.ed.gov/data/
+https://worldpopulationreview.com/state-rankings/most-liberal-states
+
+We will be using the following columns for analysis:
+
+SAT Data:
+
+- INSTNM - Institution name
+
+- STABBR - State postcode
+
+- SAT_AVG - Average SAT equivalent score of students admitted
+
+- SATVRMID - Midpoint of SAT scores at the institution (critical reading)
+
+- SATMTMID - Midpoint of SAT scores at the institution (math)
+
+Unusual Factors:
+
+- COVID-19 pandemic might affect the SAT score of institutions since some institutions do not require the SAT score for admission after this period
+- Some universities do not use SAT. Those data points will be omitted from this investigation.
+
+```{r read data, include=FALSE}
+# read data
+y2017 = read_csv("MERGED2017_18_PP.csv")
+y2018 = read_csv("MERGED2018_19_PP.csv")
+y2019 = read_csv("MERGED2019_20_PP.csv")
+y2020 = read_csv("MERGED2020_21_PP.csv")
+```
+
+```{r merge data, include=FALSE}
+# merge data
+file = y2017 %>%
+  merge(y2018, all=TRUE) %>%
+  merge(y2019, all=TRUE) %>%
+  merge(y2020, all=TRUE)
+```
+
+```{r, include=FALSE}
+# data selection
+college = file %>% 
+  select("INSTNM", "STABBR", "SAT_AVG", "SATVRMID", "SATMTMID")
+```
+
+```{r, include=FALSE}
+college[college == 'NULL'] = NA
+colSums(is.na(college))
+college = college %>% na.omit()
+
+# convert data type to numeric
+college = college %>%
+  mutate_at(vars("SAT_AVG", "SATVRMID", "SATMTMID"), as.numeric)
+
+```
+
+```{r, include=FALSE}
+# data preparation for geo plot
+viz = file %>%
+  select("INSTNM", "STABBR", "SATVRMID", "SATMTMID",  "ZIP", "LATITUDE", "LONGITUDE", "CITY") %>%
+  mutate(type = 
+           ifelse(
+    file$STABBR %in% c("WA", "OR", "CA", "HI", "IL", "MD", "DE", "NJ", "CT", "RI", "MA", "NY", "VT", "NH", "ME"), 
+    "Liberal State",
+    ifelse(file$STABBR %in% c("AK", "MT", "ND", "ID", "WY", "SD", "UT", "MO", "KS", "OK", "LA", 'MS', 'AL', 'GA', 'TN', 'SC', 'WV', 'IN', 'NM', 'AZ', 'TX', 'KY', 'OH', 'NC'), "Conservative State", 
+    "Neither")))
+
+viz[viz == 'NULL'] = NA
+
+uniInfo = paste(viz[['INSTNM']], "<br>", 
+                viz[['CITY']], ", ", 
+                viz[['STABBR']], viz[['ZIP']], "<br>",
+                "Avg SAT Math", viz[['SATMTMID']], "<br>", 
+                "Avg SAT Verbal", viz[['SATVRMID']], "<br>",
+                viz[['type']])
+
+viz$info = uniInfo
+
+## filter data
+viz = filter(viz,
+              is.na(LATITUDE) == FALSE &
+              is.na(LONGITUDE) == FALSE &
+              is.na(SATVRMID) == FALSE &
+              is.na(SATMTMID) == FALSE)
+
+blingIcon = makeIcon(
+  iconUrl = "https://img.icons8.com/color/344/school-building.png",
+  iconWidth = 30, iconHeight = 30,
+)
+
+```
+**Assumption**
+We assume that each school’s political view depends solely on each school’s location. 
+Due to the covid pandemic, the ability to take these exams is limited. Some colleges have removed SAT scores from their requirement. However, the applicants can still submit their score. We assume that this change is neglectable. 
+
+
+## Analysis
+This is the map showing all institutions across the United States with their SAT score. 
+The blue dots indicate the universities in the location of liberal states. 
+The red dots indicate the universities in the location of conservative states.
+The grey dots indicate the universities in the location of states in which the political types are neither liberal nor conservative.
+
+```{r, echo=FALSE}
+# visualize map of university 
+pal <- colorFactor(
+  palette = c('red', 'blue', 'grey'),
+  domain = viz$type
+)
+
+map = leaflet(viz) %>% 
+          setView(-93.65, 42.0285, zoom = 4) %>%
+          addTiles() %>%
+          addMarkers(~as.numeric(LONGITUDE), ~as.numeric(LATITUDE), popup=~info,
+                     options = popupOptions(closeButton = TRUE),
+                     clusterOptions = markerClusterOptions(), 
+                     icon = blingIcon) %>%
+  addCircles(~as.numeric(LONGITUDE), ~as.numeric(LATITUDE), weight = 1, 
+             color = ~pal(type), radius = 20000)
+map
+
+
+```
+
+```{r number of schools of blue state, echo=FALSE}
+blue = college %>% 
+  filter(college$STABBR %in% c("WA", "OR", "CA", "HI", "IL", "MD", "DE", "NJ", "CT", "RI", "MA", "NY", "VT", "NH", "ME"))
+
+num_school_blue = blue %>%
+  group_by(STABBR) %>%
+  summarize(count = n())
+
+ggplot(data = num_school_blue,
+       aes(x = reorder(STABBR, -count, sum), y = count, fill=STABBR)) +
+  geom_col() +
+  geom_text(aes(x=STABBR, y=count-5, label=count), size=3.5) + 
+  ggtitle("Number of Schools in Liberal States") +
+  xlab("State")+
+  ylab("Number of Institutions")
+```
+
+
+```{r number of schools of red state, echo=FALSE}
+red = college %>% 
+  filter(college$STABBR %in% c("AK", "MT", "ND", "ID", "WY", "SD", "UT", "MO", "KS", "OK", "LA", 'MS', 'AL', 'GA', 'TN', 'SC', 'WV', 'IN', 'NM', 'AZ', 'TX', 'KY', 'OH', 'NC'))
+
+num_school_red = red %>%
+  group_by(STABBR) %>%
+  summarize(count = n())
+
+ggplot(data = num_school_red,
+       aes(x = reorder(STABBR, -count, sum), y = count, fill=STABBR)) +
+  geom_col() +
+  geom_text(aes(x=STABBR, y=count-5, label=count), size=3.5) + 
+  ggtitle("Number of Schools in Conservative States") +
+  xlab("State")+
+  ylab("Number of Institutions")
+```
+
+
+
+According to the Central Limit Theorem, the distribution of sample means approximates a normal distribution as the sample size gets larger, regardless of the population's distribution If the sample size is either equal or greater than 30. Since our dataset is the average SAT score and sample size is of sufficient size, we decided to use t-approximation. 
+There are 1502 liberal state universities and 2026 conservative state universities. As we are using the Welch test, we do not assume that the variance is the same. So the greater number of conservative state universities can be ignored.
+
+```{r, echo = FALSE}
+new_col = college %>% 
+  mutate(type = 
+           ifelse(
+    college$STABBR %in% c("WA", "OR", "CA", "HI", "IL", "MD", "DE", "NJ", "CT", "RI", "MA", "NY", "VT", "NH", "ME"), 
+    "Liberal States",
+    ifelse(college$STABBR %in% c("AK", "MT", "ND", "ID", "WY", "SD", "UT", "MO", "KS", "OK", "LA", 'MS', 'AL', 'GA', 'TN', 'SC', 'WV', 'IN', 'NM', 'AZ', 'TX', 'KY', 'OH', 'NC'), "Conservative State", 
+    "Neither"))) %>%
+filter(type != "Neither")
+
+ggplot(new_col) +
+  geom_boxplot(aes(x = type,y = SAT_AVG, fill = type)) +
+  geom_point(aes(x = type,y = SAT_AVG), position = position_jitter(width = 0.3, height = 0), alpha = 0.15, color = "black", size = 0.5) +
+  scale_y_continuous(breaks = seq(500,1600, 125)) +
+  labs(title = "Box Plot of Liberal/Conservative States Average SAT Score", y = "Average SAT Score", x = "Type")
+```
+
+
+```{r, echo = FALSE}
+density_state = college %>%   
+  mutate(type = 
+           ifelse(
+    college$STABBR %in% c("WA", "OR", "CA", "HI", "IL", "MD", "DE", "NJ", "CT", "RI", "MA", "NY", "VT", "NH", "ME"), 
+    "Liberal States",
+    ifelse(college$STABBR %in% c("AK", "MT", "ND", "ID", "WY", "SD", "UT", "MO", "KS", "OK", "LA", 'MS', 'AL', 'GA', 'TN', 'SC', 'WV', 'IN', 'NM', 'AZ', 'TX', 'KY', 'OH', 'NC'), "Conservative State", 
+    "Neither"))) %>%
+  select("INSTNM", "SAT_AVG", "type") %>%
+  group_by(INSTNM, type) %>%
+  summarize(mean_sat = mean(SAT_AVG)) %>%
+filter(type != "Neither")
+
+ggplot(density_state, aes(x=mean_sat, color=type, fill=type, group=type)) +
+  geom_density(alpha=0.3) +
+  ggtitle("Density of Average SAT Score Red vs Blue States") +
+  xlab("Average SAT Score") +
+  ylab("")
+```
+
+*Next, we will perform a hypothesis testing on the average score of sat between red states and blue states and leave out the states in which the political viewpoint are neither liberal nor conservative*
+
+**Hypothesis testing:**
+
+**Population and Sample:** 
+
+Population -> Average SAT score of each institution in the US
+
+Sample -> Average SAT score of each institution during 2017-2021 where admission score is not missing (3215 samples)
+
+**Statistical Model:**
+
+Institutions are $x_1,…,x_n$ for $n=3215$
+
+Model these institutions as a random sample from the larger population
+
+Let $F$ be this unspecified distribution
+
+Let $μ$ be the mean
+
+Let $σ$ be the standard deviation
+
+$Xi∼F(μ,σ),i=1,…,n$
+
+$Yi∼F2(μ2,σ2),i=1,…,n2$
+
+**State Hypothesis:**
+
+$H_o =$ There is no difference between average sat score of a more liberal states and a more conservative states
+
+$H_a =$ There is a difference between average sat score of a more liberal states and a more conservative states
+
+**Choose a Test Statistic:**
+
+Test statistic $t=(\overline{x}−\overline{y})/(SE(\overline{x}−\overline{y}))$
+
+```{r, echo=FALSE}
+red_score = red %>%
+  group_by(INSTNM) %>%
+  summarize(sat = round(mean(SAT_AVG))) %>%
+  pull(sat)
+  
+blue_score = blue %>%
+  group_by(INSTNM) %>%
+  summarize(sat = round(mean(SAT_AVG))) %>%
+  pull(sat)
+
+t.test(blue_score, red_score)
+tstat = t.test(blue_score, red_score)$statistic
+pvalue = t.test(blue_score, red_score)$p.value
+
+gt(df = 767.58) +
+  geom_t_fill(df = 767.58, a = tstat) +
+  geom_t_fill(df = 767.58, b = -tstat) +
+  geom_vline(aes(xintercept = tstat)) + 
+  geom_vline(aes(xintercept = -tstat)) +
+  xlab("t statistic") +
+  ggtitle("P-value visualization",
+          subtitle = "767.58 df, t = 6.1943") +
+  theme_minimal()
+
+```
+We would then perform a statistical test to check whether the liberal states have higher average SATs score than conservative states
+```{r, echo = FALSE}
+t.test(blue_score, red_score, alternative = "greater")
+```
+
+
+## Discussion
+
+
+
+**Shortcomings:** 
+
+
+Making an assumption that every school is liberal under the liberal states and conservative under the conservative states may discard some liberal schools that are located in conservative states and vice versa. 
+
+
+**Discussion**
+
+The evidence is consistent with there being a difference in the mean of average sat score of liberal states and conservative states (p = 9.542e-10, Welch Two Sample t-test, df = 767.58). 
+By convention, we set significance level to p-value < 0.05. Under this significant level, we can reject the null hypothesis, since we obtained a p-value of 9.542e-10. This means that the average SAT score for liberal and conservative schools are in fact different.
+
+We would like to know further whether the difference is positive or negative.
+
+The one-sided hypothesis test in the difference of the true means of liberal being greater than conservative yields a p-value of 4.771e-10
+
+This means that liberal states universities place more emphasis on the SAT scores than that of conservative states universities. However, we cannot guarantee that this is the case because each college applicant may have their own preference and will apply to more universities that fits more with their belief.
+
+Furthermore, we are 95% confident that the average sat score of liberal states is between 36.52494 and 70.41637 higher than the average sat score of conservative states.
+
+*Potential future directions for additional work*
+
+- We could use other variables in the data set to see why liberal states have higher average SAT scores. For example: ethnicity, family income, and school endowment.
+- If we could find the admission score of each student and the institution they attend, we could better understand how each ethnicity performs
+
+
+**Conclusion**
+Liberal states also have higher average SAT scores than conservative states given by 95% confidence interval [43.98159, 79.56565] which may suggest that liberal states emphasize more on SAT scores.
+
+**Reference**
+
+1. “Data Home: College Scorecard.” Data Home | College Scorecard, https://collegescorecard.ed.gov/data/. 
+
+2. Jones, Jeffrey M. “Conservatives Greatly Outnumber Liberals in 19 U.S. States.” Gallup.com, Gallup, 20 Nov. 2021, https://news.gallup.com/poll/247016/conservatives-greatly-outnumber-liberals-states.aspx. 
+
+3. Most Liberal States 2022, https://worldpopulationreview.com/state-rankings/most-liberal-states.
+
